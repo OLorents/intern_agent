@@ -70,5 +70,13 @@
     "perplexity",
     "replit",
     "runway"
-  ]
+  ],
+  "workday": [
+    { "name": "NVIDIA",     "host": "nvidia.wd5.myworkdayjobs.com",     "tenant": "nvidia",     "site": "NVIDIAExternalCareerSite" },
+    { "name": "Salesforce", "host": "salesforce.wd12.myworkdayjobs.com", "tenant": "salesforce", "site": "External_Career_Site" },
+    { "name": "Adobe",      "host": "adobe.wd5.myworkdayjobs.com",       "tenant": "adobe",      "site": "external_experienced" },
+    { "name": "Intel",      "host": "intel.wd1.myworkdayjobs.com",       "tenant": "intel",      "site": "External" }
+  ],
+  "amazon": true,
+  "usajobs_keywords": ["machine learning", "artificial intelligence", "deep learning"]
 }

@@ -15,5 +15,10 @@
   ],
   "greenhouse": ["anthropic", "databricks", "scaleai"],
   "lever": [],
-  "ashby": ["openai", "ramp", "notion"]
+  "ashby": ["openai", "ramp", "notion"],
+  "workday": [
+    { "name": "NVIDIA", "host": "nvidia.wd5.myworkdayjobs.com", "tenant": "nvidia", "site": "NVIDIAExternalCareerSite" }
+  ],
+  "amazon": true,
+  "usajobs_keywords": ["machine learning", "artificial intelligence"]
 }

@@ -49,7 +49,11 @@ STATE_PATH = os.path.join(HERE, "state", "seen.json")
 HEALTH_PATH = os.path.join(HERE, "state", "source_health.json")
 LOG_PATH = os.path.join(HERE, "logs", "agent.log")
 SSL_CTX = ssl.create_default_context()
-UA = {"User-Agent": "intern-watch-agent/1.0 (+personal job monitor)"}
+# Browser-like UA: these are public endpoints that career sites call from a browser; a
+# normal UA avoids needless blocks. NOTE: the agent never authenticates anywhere, so there
+# is no account that can be locked -- the worst case is a transient IP rate-limit.
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                    "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
 
 # --- US location matching -----------------------------------------------------
 US_CODES = {
@@ -99,11 +103,21 @@ def log(msg):
         pass
 
 # --- http ---------------------------------------------------------------------
-def fetch_json(url, timeout=35, retries=1):
+def fetch_json(url, timeout=35, retries=1, data=None, headers=None):
+    """GET (or POST when `data` given). No auth is ever sent unless a caller passes a
+    public-data API key header explicitly (USAJobs)."""
+    h = dict(UA)
+    if headers:
+        h.update(headers)
+    body = None
+    if data is not None:
+        body = json.dumps(data).encode("utf-8")
+        h.setdefault("Content-Type", "application/json")
+        h.setdefault("Accept", "application/json")
     last = None
     for attempt in range(retries + 1):
         try:
-            req = urllib.request.Request(url, headers=UA)
+            req = urllib.request.Request(url, data=body, headers=h)
             with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as r:
                 return json.loads(r.read().decode("utf-8", "replace"))
         except Exception as e:
@@ -297,6 +311,95 @@ def from_ashby(org, season, year):
                         commitment, f"ashby:{org}"))
     return out
 
+def from_workday(entry, season, year):
+    """Generic Workday tenant poller (public CXS endpoint, no auth).
+    entry = {name, host, tenant, site}. Covers companies AND many national labs."""
+    host, tenant, site = entry["host"], entry["tenant"], entry["site"]
+    name = entry.get("name") or tenant.title()
+    api = f"https://{host}/wday/cxs/{tenant}/{site}/jobs"
+    base = f"https://{host}/en-US/{site}"
+    out, seen = [], set()
+    for q in ("machine learning intern", "ai intern", "research intern"):
+        for offset in (0, 20):  # light pagination only (<=40 hits/query) -- gentle
+            try:
+                data = fetch_json(api, data={"appliedFacets": {}, "limit": 20,
+                                             "offset": offset, "searchText": q})
+            except Exception:
+                if offset == 0:
+                    raise            # first page failed -> mark whole source failed
+                break
+            posts = data.get("jobPostings") or []
+            for p in posts:
+                title = p.get("title", "")
+                path = p.get("externalPath", "")
+                if path in seen or not (is_ml(title) and is_intern(title)):
+                    continue
+                if not (role_relevant(title, season) and year_not_stale(title, year)):
+                    continue
+                loc = p.get("locationsText", "") or ""
+                if not is_us(loc):
+                    continue
+                seen.add(path)
+                out.append(_job(name, title, base + path if path else base, loc, "",
+                                f"workday:{tenant}"))
+            if len(posts) < 20:
+                break
+    return out
+
+def from_amazon(_enabled, season, year):
+    """Amazon public jobs search (no auth). country_code gives a precise US filter."""
+    base = "https://www.amazon.jobs"
+    out, seen = [], set()
+    queries = [
+        "category%5B%5D=machine-learning-science&base_query=intern",
+        "base_query=machine%20learning%20intern",
+        "base_query=applied%20scientist%20intern",
+    ]
+    for qs in queries:
+        data = fetch_json(f"{base}/en/search.json?{qs}&result_limit=100&offset=0")
+        for j in data.get("jobs", []):
+            title = j.get("title", "")
+            path = j.get("job_path", "")
+            if path in seen or not (is_ml(title) and is_intern(title)):
+                continue
+            if not (role_relevant(title, season) and year_not_stale(title, year)):
+                continue
+            cc = (j.get("country_code") or "").upper()
+            loc = j.get("normalized_location") or ", ".join(
+                x for x in (j.get("city"), j.get("country_code")) if x)
+            if cc and cc not in ("USA", "US"):
+                continue
+            if not cc and not is_us(loc):
+                continue
+            seen.add(path)
+            out.append(_job("Amazon", title, base + path if path else base, loc, "", "amazon"))
+    return out
+
+def from_usajobs(keyword, season, year):
+    """US federal jobs (USAJobs). Requires a FREE public-data API key in env USAJOBS_API_KEY.
+    That key is data-API access, NOT a personal login -- nothing here can lock an account."""
+    key = os.environ.get("USAJOBS_API_KEY", "")
+    if not key:
+        raise RuntimeError("USAJOBS_API_KEY not set (optional source skipped)")
+    email = os.environ.get("USAJOBS_EMAIL", "") or "intern-watch@example.com"
+    url = ("https://data.usajobs.gov/api/search?ResultsPerPage=100&Keyword="
+           + urllib.parse.quote(keyword))
+    data = fetch_json(url, headers={"Host": "data.usajobs.gov",
+                                    "Authorization-Key": key, "User-Agent": email})
+    items = (data.get("SearchResult") or {}).get("SearchResultItems") or []
+    out = []
+    for it in items:
+        d = it.get("MatchedObjectDescriptor") or {}
+        title = d.get("PositionTitle", "")
+        if not (is_ml(title) and is_intern(title)):
+            continue
+        if not (role_relevant(title, season) and year_not_stale(title, year)):
+            continue
+        out.append(_job(d.get("OrganizationName", "US Government"), title,
+                        d.get("PositionURI", ""), d.get("PositionLocationDisplay", ""),
+                        "", "usajobs"))
+    return out
+
 # --- state --------------------------------------------------------------------
 def load_state():
     try:
@@ -392,27 +495,33 @@ def notify(token, chat_id, jobs):
 
 # --- main ---------------------------------------------------------------------
 def gather(cfg, season, year):
-    tasks = []
+    tasks = []  # (label, fn, arg)
     for u in cfg.get("aggregators", []):
-        tasks.append(("agg", u, from_aggregator))
+        tasks.append((f"agg:{u}", from_aggregator, u))
     for t in cfg.get("greenhouse", []):
-        tasks.append(("gh", t, from_greenhouse))
+        tasks.append((f"greenhouse:{t}", from_greenhouse, t))
     for s in cfg.get("lever", []):
-        tasks.append(("lever", s, from_lever))
+        tasks.append((f"lever:{s}", from_lever, s))
     for o in cfg.get("ashby", []):
-        tasks.append(("ashby", o, from_ashby))
+        tasks.append((f"ashby:{o}", from_ashby, o))
+    for w in cfg.get("workday", []):
+        tasks.append((f"workday:{w.get('tenant') or w.get('name')}", from_workday, w))
+    if cfg.get("amazon"):
+        tasks.append(("amazon", from_amazon, True))
+    if os.environ.get("USAJOBS_API_KEY"):
+        for kw in cfg.get("usajobs_keywords", []):
+            tasks.append((f"usajobs:{kw}", from_usajobs, kw))
 
     jobs, status = [], {}
     def run(task):
-        kind, arg, fn = task
-        return kind, arg, fn(arg, season, year)
+        label, fn, arg = task
+        return label, fn(arg, season, year)
     with cf.ThreadPoolExecutor(max_workers=12) as ex:
         futs = {ex.submit(run, t): t for t in tasks}
         for fut in cf.as_completed(futs):
-            kind, arg, _ = futs[fut]
-            sid = f"{kind}:{arg}"
+            sid = futs[fut][0]
             try:
-                _, _, res = fut.result()
+                _, res = fut.result()
                 jobs.extend(res); status[sid] = True
                 if res:
                     log(f"  + {sid} -> {len(res)} match(es)")

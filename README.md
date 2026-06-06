@@ -28,6 +28,13 @@ Zero third-party Python packages — uses the standard library only. Needs Pytho
 
 Any source that errors (404, timeout) is logged and skipped — one bad source never blocks a run.
 
+> **No accounts, ever.** Every source is a *public, unauthenticated* endpoint — the same JSON a
+> company's own careers page loads in your browser (Greenhouse, Ashby, Workday CXS, `amazon.jobs`,
+> the community feeds). The agent never logs in anywhere, so **there is no account to lock**; the
+> worst case is a temporary IP rate-limit, which fails safe and the health-watchdog flags. The one
+> optional exception, USAJobs, uses a *free public-data API key* (not a personal login).
+> LinkedIn and Indeed are deliberately **not** used (no usable public API; scraping gets blocked).
+
 ---
 
 ## Setup (one time)
@@ -140,6 +147,15 @@ Edit `config.json`:
   `https://api.ashbyhq.com/posting-api/job-board/<SLUG>`.
 - **`lever`** — slug from `jobs.lever.co/<SLUG>`. Verify:
   `https://api.lever.co/v0/postings/<SLUG>?mode=json`.
+- **`workday`** — direct, no-auth polling of a company's Workday board. Add
+  `{ "name", "host", "tenant", "site" }`. Find `host/tenant/site` from the careers URL pattern
+  `https://<host>/wday/cxs/<tenant>/<site>/jobs` (open the careers page, watch the network call).
+  Shipped & verified: NVIDIA, Salesforce, Adobe, Intel.
+- **`amazon`** — set `true` to poll Amazon's public `amazon.jobs` search (no auth).
+- **`usajobs_keywords`** — federal jobs (NASA/NIST/agencies). **Off unless** you set a free
+  `USAJOBS_API_KEY` env/secret (register at developer.usajobs.gov). Public-data key, not a login.
+  Note: most DOE *contractor* labs (LLNL/Sandia/ORNL/Argonne/PNNL) post on their own ATSs, not
+  USAJobs — add those as `workday`/`greenhouse` entries if they expose a public board.
 - **`aggregators`** — raw `listings.json` URLs. Add the 2027 repos as they appear.
 
 If a board returns 0 matches it usually just has no ML interns posted right now — not an error.
