@@ -1,0 +1,11 @@
+# Local secrets — NEVER commit. The cloud uses GitHub Actions Secrets instead.
+secrets.json
+
+# Logs & Python caches
+logs/
+__pycache__/
+*.pyc
+
+# Committed on purpose:
+#   config.json        -> company lists + filters (NO secrets)
+#   state/seen.json    -> the cloud's memory of already-notified roles

@@ -1,0 +1,19 @@
+{
+  "telegram": {
+    "bot_token": "PASTE_BOT_TOKEN_FROM_BOTFATHER",
+    "chat_id": "PASTE_YOUR_CHAT_ID"
+  },
+  "filters": {
+    "season": "summer",
+    "year": "2027",
+    "us_only": true,
+    "exclude_title_keywords": ["phd"]
+  },
+  "aggregators": [
+    "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
+    "https://raw.githubusercontent.com/vanshb03/Summer2027-Internships/main/.github/scripts/listings.json"
+  ],
+  "greenhouse": ["anthropic", "databricks", "scaleai"],
+  "lever": [],
+  "ashby": ["openai", "ramp", "notion"]
+}

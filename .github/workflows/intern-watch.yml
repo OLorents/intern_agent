@@ -1,0 +1,41 @@
+name: Intern Watch
+
+# Runs the ML/AI internship monitor on GitHub's servers — independent of your laptop.
+on:
+  schedule:
+    - cron: "0 15 * * *"   # ~08:00 America/Los_Angeles (PDT); 07:00 in winter (PST)
+    - cron: "0 3 * * *"    # ~20:00 America/Los_Angeles (PDT); 19:00 in winter (PST)
+  workflow_dispatch: {}     # adds a manual "Run workflow" button
+
+permissions:
+  contents: write           # so the run can commit updated state back to the repo
+
+concurrency:
+  group: intern-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run agent
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python agent.py
+
+      - name: Persist state
+        run: |
+          mkdir -p state
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > state/last_run.txt
+          git config user.name "intern-watch-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/seen.json state/last_run.txt
+          git commit -m "chore: update watch state [skip ci]" || echo "no state changes"
+          git push || echo "nothing to push"

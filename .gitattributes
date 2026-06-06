@@ -1,0 +1,4 @@
+# Normalize to LF in the repo so the GitHub Actions (Ubuntu) shell script is clean.
+* text=auto eol=lf
+# Keep Windows-native CRLF for PowerShell on checkout.
+*.ps1 text eol=crlf
