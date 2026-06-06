@@ -55,7 +55,3 @@ jobs:
             echo "push attempt $i failed; retrying in 5s"; sleep 5
           done
           echo "::warning::could not push updated state after 5 attempts"
-
-      # Best-effort mitigation for GitHub disabling scheduled workflows after 60 idle days.
-      - name: Keep workflow alive
-        uses: gautamkrishnar/keepalive-workflow@v2

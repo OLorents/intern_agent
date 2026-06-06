@@ -110,9 +110,11 @@ The token + chat id come from GitHub Actions Secrets in the cloud, and from a gi
 - The workflow **fails loudly** if the Telegram secrets are missing (instead of silently never
   notifying), and pushes state with `git pull --rebase` + retry so the two daily runs can't
   clobber each other's state.
-- A keep-alive step mitigates GitHub's **60-day auto-disable** of idle scheduled workflows
-  (best-effort). If you ever get the "workflow disabled" email, click **Enable** to resume — or
-  ask me to wire a Personal Access Token (`KEEPALIVE_PAT`) for a hard guarantee.
+- Uses **only GitHub-authored actions** (`checkout`, `setup-python`) so it works under strict
+  org Actions policies — no third-party actions to be blocked.
+- GitHub **auto-disables** idle scheduled workflows after **60 days**. If you get the
+  "workflow disabled" email, click **Enable** to resume (or ask me to wire a Personal Access
+  Token for a hands-off guarantee).
 - **Silent-failure watchdog:** the agent tracks per-source health in `state/source_health.json`
   and sends a Telegram alert if a source that *used to work* goes dark (3 runs in a row) or if
   **all** sources fail — so "quietly broken" never looks like "no new roles yet."
