@@ -20,6 +20,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Fail LOUDLY if secrets are missing, instead of silently never notifying.
+      - name: Verify Telegram secrets are set
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "::error::TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set. Add them under repo Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -30,12 +41,21 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python agent.py
 
+      # Commit state back, with rebase + retry so the two daily runs can't clobber each other.
       - name: Persist state
         run: |
           mkdir -p state
           date -u +"%Y-%m-%dT%H:%M:%SZ" > state/last_run.txt
           git config user.name "intern-watch-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state/seen.json state/last_run.txt
-          git commit -m "chore: update watch state [skip ci]" || echo "no state changes"
-          git push || echo "nothing to push"
+          git add state/
+          git commit -m "chore: update watch state [skip ci]" || { echo "no state changes"; exit 0; }
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push && { echo "pushed"; exit 0; }
+            echo "push attempt $i failed; retrying in 5s"; sleep 5
+          done
+          echo "::warning::could not push updated state after 5 attempts"
+
+      # Best-effort mitigation for GitHub disabling scheduled workflows after 60 idle days.
+      - name: Keep workflow alive
+        uses: gautamkrishnar/keepalive-workflow@v2

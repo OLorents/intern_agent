@@ -1,0 +1,222 @@
+{
+ "agg:https://raw.githubusercontent.com/vanshb03/Summer2027-Internships/main/.github/scripts/listings.json": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:figure": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:discord": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:lyft": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:scaleai": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:robinhood": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:airbnb": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:pinterest": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:anthropic": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:databricks": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:samsara": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:instacart": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:gleanwork": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:akunacapital": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:cerebrassystems": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:stripe": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:imbue": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:aurorainnovation": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:brex": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:drweng": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:imc": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:jumptrading": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:janestreet": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:pdtpartners": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:nuro": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:recursionpharmaceuticals": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:togetherai": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:sambanovasystems": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:point72": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:roblox": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:worldlabs": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:vercel": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:character": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:xai": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "gh:waymo": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:cursor": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:reka": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:cartesia": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:ramp": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:contextual": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "agg:https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json": {
+  "last_ok": null,
+  "fail_streak": 1
+ },
+ "ashby:harvey": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "agg:https://raw.githubusercontent.com/cvrve/Summer2027-Internships/main/.github/scripts/listings.json": {
+  "last_ok": null,
+  "fail_streak": 1
+ },
+ "ashby:decagon": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:notion": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:liquid": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:elevenlabs": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:abridge": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:sierra": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:cohere": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:runway": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:mercor": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:perplexity": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:replit": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ },
+ "ashby:openai": {
+  "last_ok": "2026-06-06T15:14:16",
+  "fail_streak": 0
+ }
+}

@@ -46,6 +46,7 @@ except Exception:
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(HERE, "config.json")
 STATE_PATH = os.path.join(HERE, "state", "seen.json")
+HEALTH_PATH = os.path.join(HERE, "state", "source_health.json")
 LOG_PATH = os.path.join(HERE, "logs", "agent.log")
 SSL_CTX = ssl.create_default_context()
 UA = {"User-Agent": "intern-watch-agent/1.0 (+personal job monitor)"}
@@ -118,9 +119,11 @@ _ML_PHRASES = [
     "applied scientist", "data scientist", "ml engineer", "ai engineer",
     "ml infrastructure", "ml platform", "foundation model", "large language",
     "reinforcement learning", "speech", "perception", "robotics",
+    "member of technical staff", "quantitative research", "quantitative researcher",
+    "quant research", "research engineer",
 ]
 _ML_TOKENS = re.compile(r"\b(ai|ml|mle|nlp|llm|llms|genai|cv|rl)\b", re.I)
-_INTERN_RE = re.compile(r"\b(intern|interns|internship|co-?op)\b", re.I)
+_INTERN_RE = re.compile(r"\b(intern|interns|internship|co-?op|resident|residency)\b", re.I)
 _YEAR_RE = re.compile(r"\b(20\d{2})\b")
 
 def is_ml(title, category=""):
@@ -183,18 +186,28 @@ def season_ok_title(title, season):
     return (not found) or (season in found)
 
 EXCLUDE_TITLE = []  # lowercase keywords; set from config in main() (default ['phd'])
+_LOWER_DEG = re.compile(r"\b(bs|ba|b\.s|bachelor|undergrad|undergraduate|ms|m\.s|masters?|mba)\b", re.I)
+_PHD_ONLY = re.compile(r"phd[\s\-]*only|only[\s\-]*phd|phd[\s\-]*required|require[sd]?\s+(a\s+)?phd", re.I)
 
 def title_allowed(title):
     t = (title or "").lower()
-    return not any(k in t for k in EXCLUDE_TITLE)
+    for k in EXCLUDE_TITLE:
+        if k == "phd":
+            # only drop PhD-ONLY roles; keep "(PhD/MS/BS)"-style roles open to undergrads
+            if "phd" in t and (_PHD_ONLY.search(t) or not _LOWER_DEG.search(title or "")):
+                return False
+        elif k in t:
+            return False
+    return True
 
 def role_relevant(title, season):
     return season_ok_title(title, season) and title_allowed(title)
 
-def norm_key(company, title):
+def norm_key(company, title, location=""):
     def n(s):
         return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
-    return f"{n(company)}::{n(title)}"
+    first_city = re.split(r"[;|,]", location or "")[0]  # keep different-city roles distinct
+    return f"{n(company)}::{n(title)}::{n(first_city)}"
 
 # --- providers (each returns list of normalized job dicts) --------------------
 def _job(company, title, url, location, term, source):
@@ -292,10 +305,58 @@ def load_state():
     except Exception:
         return {}
 
+def _atomic_write_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=1)
+    os.replace(tmp, path)  # atomic on POSIX + Windows -> never a truncated/corrupt file
+
 def save_state(state):
-    os.makedirs(os.path.dirname(STATE_PATH), exist_ok=True)
-    with open(STATE_PATH, "w", encoding="utf-8") as f:
-        json.dump(state, f, indent=1)
+    _atomic_write_json(STATE_PATH, state)
+
+def load_health():
+    try:
+        with open(HEALTH_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+FAIL_THRESHOLD = 3  # consecutive failures before a previously-OK source is flagged
+
+def check_source_health(status, now_iso, token, chat_id, alerts_on=True):
+    """Tell 'quietly broken' apart from 'genuinely no new roles'. Pings you if a source
+    that worked before now fails repeatedly, or if ALL sources fail in one run."""
+    health = load_health()
+    degraded = []
+    for sid, ok in status.items():
+        h = health.get(sid) or {"last_ok": None, "fail_streak": 0}
+        if ok:
+            h["last_ok"] = now_iso
+            h["fail_streak"] = 0
+        else:
+            h["fail_streak"] = int(h.get("fail_streak", 0)) + 1
+            if h.get("last_ok") and h["fail_streak"] == FAIL_THRESHOLD:
+                degraded.append(sid)  # worked before, just crossed the failure threshold
+        health[sid] = h
+    _atomic_write_json(HEALTH_PATH, health)
+
+    ok_count = sum(1 for v in status.values() if v)
+    alerts = []
+    if degraded:
+        alerts.append("⚠️ <b>Source(s) went dark</b> (worked before, failed "
+                      f"{FAIL_THRESHOLD}× in a row — you may be missing roles):\n"
+                      + "\n".join("• " + html.escape(s) for s in degraded))
+    if status and ok_count == 0:
+        alerts.append("⚠️ <b>ALL sources failed this run.</b> Notifications may be "
+                      "incomplete — check the logs.")
+    for a in alerts:
+        log("HEALTH: " + a.replace("<b>", "").replace("</b>", ""))
+    if alerts and alerts_on and token and chat_id:
+        try:
+            telegram_send(token, chat_id, "\n\n".join(alerts))
+        except Exception as e:
+            log(f"health alert send failed: {e}")
 
 # --- telegram -----------------------------------------------------------------
 def telegram_send(token, chat_id, text):
@@ -341,7 +402,7 @@ def gather(cfg, season, year):
     for o in cfg.get("ashby", []):
         tasks.append(("ashby", o, from_ashby))
 
-    jobs, ok, fail = [], 0, 0
+    jobs, status = [], {}
     def run(task):
         kind, arg, fn = task
         return kind, arg, fn(arg, season, year)
@@ -349,25 +410,27 @@ def gather(cfg, season, year):
         futs = {ex.submit(run, t): t for t in tasks}
         for fut in cf.as_completed(futs):
             kind, arg, _ = futs[fut]
+            sid = f"{kind}:{arg}"
             try:
                 _, _, res = fut.result()
-                jobs.extend(res); ok += 1
+                jobs.extend(res); status[sid] = True
                 if res:
-                    log(f"  + {kind}:{arg} -> {len(res)} match(es)")
+                    log(f"  + {sid} -> {len(res)} match(es)")
             except Exception as e:
-                fail += 1
+                status[sid] = False
                 code = getattr(e, "code", type(e).__name__)
-                log(f"  ! {kind}:{arg} unavailable ({code}) -- skipped")
-    log(f"sources ok={ok} failed={fail} (failures are normal pre-launch / for 404s)")
+                log(f"  ! {sid} unavailable ({code}) -- skipped")
+    ok = sum(1 for v in status.values() if v)
+    log(f"sources ok={ok} failed={len(status)-ok} (pre-launch/404 failures are expected)")
 
-    # de-dupe across sources by company+title
+    # de-dupe across sources by company+title+city (keeps different-city roles distinct)
     seen_keys, uniq = set(), []
     for j in jobs:
-        k = norm_key(j["company"], j["title"])
+        k = norm_key(j["company"], j["title"], j.get("location", ""))
         if k in seen_keys:
             continue
         seen_keys.add(k); j["_key"] = k; uniq.append(j)
-    return uniq
+    return uniq, status
 
 def load_config():
     if not os.path.exists(CONFIG_PATH):
@@ -419,13 +482,19 @@ def main():
 
     log(f"=== run start | target: {season} {year} | "
         f"{'DRY-RUN' if args.dry_run else 'SEED' if args.seed else 'LIVE'} ===")
-    jobs = gather(cfg, season, year)
+    jobs, status = gather(cfg, season, year)
     log(f"total unique matches: {len(jobs)}")
 
     if args.all:
         for j in sorted(jobs, key=lambda x: x["company"].lower()):
             print(f"  {j['company']:<24} | {j['title']:<48} | {j['location']:<28} | {j['source']}")
         return
+
+    now_iso = dt.datetime.now().isoformat(timespec="seconds")
+
+    # source-health watchdog: pings you if a source that USED to work goes dark
+    if not args.dry_run:
+        check_source_health(status, now_iso, token, chat_id, alerts_on=not args.seed)
 
     state = load_state()
     new = [j for j in jobs if j["_key"] not in state]
@@ -436,7 +505,6 @@ def main():
             print(f"  NEW  {j['company']:<22} | {j['title']:<46} | {j['location']:<26} | {j['url']}")
         log("dry-run: state NOT updated, no notifications sent."); return
 
-    now_iso = dt.datetime.now().isoformat(timespec="seconds")
     if args.seed:
         for j in jobs:
             state[j["_key"]] = {"company": j["company"], "title": j["title"],

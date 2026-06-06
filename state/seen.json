@@ -64,5 +64,89 @@
   "title": "Quantitative Research Intern (NLP)",
   "url": "https://boards.greenhouse.io/point72/jobs/8018862002?gh_jid=8018862002",
   "first_seen": "2026-06-06T14:37:54"
+ },
+ "point72::quantitative researcher intern::new york": {
+  "company": "Point72",
+  "title": "Quantitative Researcher Intern",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "intercontinental exchange inc::artificial intelligence data machine learning intern::new york": {
+  "company": "Intercontinental Exchange, Inc.",
+  "title": "Artificial Intelligence, Data & Machine Learning Intern",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "tiktok::llm post training engineer intern research product::san jose": {
+  "company": "TikTok",
+  "title": "LLM Post-training Engineer Intern, Research & Product",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "homebase::forward deployed engineering intern ai native::houston": {
+  "company": "Homebase",
+  "title": "Forward Deployed Engineering Intern, AI-Native",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "amazon::robotics software development engineer intern co op::sunnyvale": {
+  "company": "Amazon",
+  "title": "Robotics - Software Development Engineer Intern/Co-op",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "veeam software::software engineering intern platform security ai::san jose": {
+  "company": "Veeam Software",
+  "title": "Software Engineering Intern, Platform, Security & AI",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "trata::research scientist intern::san francisco": {
+  "company": "Trata",
+  "title": "Research Scientist Intern",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "terranox ai::summer intern ai ml engineering::san francisco": {
+  "company": "Terranox AI",
+  "title": "Summer Intern - AI/ML Engineering",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "scale ai::ai builder intern::san francisco": {
+  "company": "Scale AI",
+  "title": "AI Builder Intern",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "nuro::software engineer ai platform intern::mountain view": {
+  "company": "Nuro",
+  "title": "Software Engineer, AI Platform - Intern",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "point72::machine learning researcher intern::new york": {
+  "company": "Point72",
+  "title": "Machine Learning Researcher - Intern",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "point72::quantitative research intern::new york": {
+  "company": "Point72",
+  "title": "Quantitative Research Intern",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "point72::quantitative research intern nlp::new york": {
+  "company": "Point72",
+  "title": "Quantitative Research Intern (NLP)",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
+ },
+ "point72::summer 2027 quantitative research internship::new york": {
+  "company": "Point72",
+  "title": "Summer 2027 Quantitative Research Internship",
+  "first_seen": "2026-06-06T15:14:16",
+  "seeded": true
  }
 }
