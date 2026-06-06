@@ -110,8 +110,8 @@ The token + chat id come from GitHub Actions Secrets in the cloud, and from a gi
 - The workflow **fails loudly** if the Telegram secrets are missing (instead of silently never
   notifying), and pushes state with `git pull --rebase` + retry so the two daily runs can't
   clobber each other's state.
-- Uses **only GitHub-authored actions** (`checkout`, `setup-python`) so it works under strict
-  org Actions policies — no third-party actions to be blocked.
+- Uses **no `uses:` actions at all** (clones with `git`, runs system `python3`), so it works
+  even under a locked-down "Allow owner actions only" policy — nothing to download or block.
 - GitHub **auto-disables** idle scheduled workflows after **60 days**. If you get the
   "workflow disabled" email, click **Enable** to resume (or ask me to wire a Personal Access
   Token for a hands-off guarantee).

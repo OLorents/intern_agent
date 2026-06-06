@@ -1,6 +1,8 @@
 name: Intern Watch
 
 # Runs the ML/AI internship monitor on GitHub's servers — independent of your laptop.
+# Deliberately uses NO `uses:` actions (no checkout/setup-python) so it runs even under a
+# locked-down "Allow <owner> actions only" policy. It clones with git and uses system python3.
 on:
   schedule:
     - cron: "0 15 * * *"   # ~08:00 America/Los_Angeles (PDT); 07:00 in winter (PST)
@@ -8,7 +10,7 @@ on:
   workflow_dispatch: {}     # adds a manual "Run workflow" button
 
 permissions:
-  contents: write           # so the run can commit updated state back to the repo
+  contents: write
 
 concurrency:
   group: intern-watch
@@ -18,9 +20,6 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      # Fail LOUDLY if secrets are missing, instead of silently never notifying.
       - name: Verify Telegram secrets are set
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -31,27 +30,33 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Run agent
+      - name: Clone, run agent, and persist state
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python agent.py
-
-      # Commit state back, with rebase + retry so the two daily runs can't clobber each other.
-      - name: Persist state
+          GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p state
-          date -u +"%Y-%m-%dT%H:%M:%SZ" > state/last_run.txt
+          set -e
+          REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git clone --quiet "$REMOTE" repo
+          cd repo
           git config user.name "intern-watch-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          python3 --version
+          python3 agent.py
+
+          mkdir -p state
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > state/last_run.txt
           git add state/
-          git commit -m "chore: update watch state [skip ci]" || { echo "no state changes"; exit 0; }
-          for i in 1 2 3 4 5; do
-            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push && { echo "pushed"; exit 0; }
-            echo "push attempt $i failed; retrying in 5s"; sleep 5
-          done
-          echo "::warning::could not push updated state after 5 attempts"
+          if git commit -m "chore: update watch state [skip ci]"; then
+            for i in 1 2 3 4 5; do
+              if git pull --rebase --autostash origin "${GITHUB_REF_NAME}" \
+                 && git push "$REMOTE" "HEAD:${GITHUB_REF_NAME}"; then
+                echo "state pushed"; break
+              fi
+              echo "push attempt $i failed; retrying in 5s"; sleep 5
+            done
+          else
+            echo "no state changes"
+          fi
